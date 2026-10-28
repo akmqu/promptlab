@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
 from typing import Any
 
+import httpx
 from fastapi import HTTPException, status
 from google import genai
 from google.genai import errors as genai_errors
@@ -76,6 +78,36 @@ def _extract_json(text: str) -> Any:
     return json.loads(cleaned)
 
 
+async def _generate_content_with_retry(
+    *,
+    client: genai.Client,
+    model: str,
+    contents: str,
+    config: types.GenerateContentConfig,
+):
+    """Retry transient transport failures; do not retry provider/API errors."""
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return await client.aio.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config,
+            )
+        except httpx.TransportError as exc:
+            if attempt == max_attempts:
+                raise
+            delay_seconds = 0.5 * (2 ** (attempt - 1))
+            logger.warning(
+                "Transient Gemini transport error: type=%s attempt=%s/%s retry_in_seconds=%.1f",
+                type(exc).__name__,
+                attempt,
+                max_attempts,
+                delay_seconds,
+            )
+            await asyncio.sleep(delay_seconds)
+
+
 async def generate_structured(
     *,
     user_prompt: str,
@@ -97,7 +129,8 @@ async def generate_structured(
     )
 
     try:
-        response = await client.aio.models.generate_content(
+        response = await _generate_content_with_retry(
+            client=client,
             model=settings.gemini_model,
             contents=contents,
             config=types.GenerateContentConfig(
@@ -109,6 +142,15 @@ async def generate_structured(
         raise
     except genai_errors.APIError as exc:
         raise _provider_http_error(exc) from exc
+    except httpx.TransportError as exc:
+        logger.exception(
+            "Gemini transport error after retries: type=%s",
+            type(exc).__name__,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Połączenie z Gemini zostało przerwane. Spróbuj ponownie za chwilę.",
+        ) from exc
     except Exception as exc:  # noqa: BLE001
         logger.exception("Unexpected Gemini client error: type=%s", exc.__class__.__name__)
         raise HTTPException(

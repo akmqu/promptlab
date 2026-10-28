@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     session_max_age_seconds: int = 60 * 60 * 24 * 14
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.8-flash"
+    gemini_model: str = "gemini-3.5-flash-lite"
     max_prompt_length: int = 2000
     ai_timeout_seconds: float = 45.0
 
