@@ -1,5 +1,7 @@
 # PromptLab
 
+🌐 **Aplikacja online:** https://promptlab-swart.vercel.app/
+
 ## Uruchomienie projektu
 
 ### 1. Pobranie projektu
@@ -47,7 +49,7 @@ python -m pip install -r backend/requirements.txt
 **Windows PowerShell:**
 ```powershell
 py -3 -m venv .venv
-.venv\Scripts\Activate.ps1
+.venv\\Scripts\\Activate.ps1
 python -m pip install -r backend/requirements.txt
 ```
 
