@@ -3,7 +3,7 @@
 🌐 **Aplikacja online:** https://promptlab-swart.vercel.app/
 
 ## Uruchomienie projektu
-
+### Baza danych - SQLite
 ### 1. Pobranie projektu
 
 Zainstaluj Git i sklonuj repozytorium:
